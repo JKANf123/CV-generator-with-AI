@@ -1,0 +1,80 @@
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from langdetect import detect
+
+# Загрузка необходимых ресурсов NLTK
+nltk.download('punkt')
+
+# Функция для очистки текста (удаление стоп-слов и ненужных символов)
+def clean_text(text, language):
+    # Загружаем стоп-слова для конкретного языка
+    stop_words = set(stopwords.words(language))
+    
+    # Токенизация текста и удаление стоп-слов
+    tokens = word_tokenize(text.lower())
+    cleaned_tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
+    return cleaned_tokens
+
+# Функция для извлечения ключевых слов с использованием TF-IDF
+def extract_keywords(text, language='english'):
+    tfidf_vectorizer = TfidfVectorizer(max_features=10)  # Ограничиваем количество ключевых слов
+    tfidf_matrix = tfidf_vectorizer.fit_transform([text])
+    feature_names = tfidf_vectorizer.get_feature_names_out()
+    return feature_names
+
+# Функция для анализа совпадений ключевых слов в резюме и вакансии
+def compare_keywords(resume_text, job_description_text):
+    # Определяем язык для текста
+    try:
+        resume_language = detect(resume_text)
+        job_language = detect(job_description_text)
+    except Exception as e:
+        print(f"Error detecting language: {e}")
+        return []
+
+    # Получаем ключевые слова с учетом языка
+    resume_keywords = extract_keywords(resume_text, resume_language)
+    job_keywords = extract_keywords(job_description_text, job_language)
+    
+    # Находим общие ключевые слова
+    common_keywords = set(resume_keywords).intersection(set(job_keywords))
+    
+    return common_keywords
+
+# Пример текста резюме и вакансии
+resume_text_en = """
+I am a software engineer with experience in Python, Java, and Machine Learning.
+I have developed several web applications using Flask and Django.
+I am also experienced in using SQL databases and building scalable systems.
+"""
+
+job_description_text_en = """
+We are looking for a software engineer with experience in Python, Django, and SQL databases.
+The ideal candidate should be comfortable working with Flask and be knowledgeable about scalable systems.
+"""
+
+# Пример текста резюме и вакансии на другом языке (русский)
+resume_text_ru = """
+Я инженер-программист с опытом работы в Python, Java и машинном обучении.
+Разрабатывал несколько веб-приложений с использованием Flask и Django.
+Также имею опыт работы с SQL-базами данных и созданием масштабируемых систем.
+"""
+
+job_description_text_ru = """
+Мы ищем инженера-программиста с опытом работы в Python, Django и SQL-базами данных.
+Идеальный кандидат должен быть знаком с Flask и иметь опыт в создании масштабируемых систем.
+"""
+
+# Анализируем ключевые слова на английском языке
+common_keywords_en = compare_keywords(resume_text_en, job_description_text_en)
+print("Common Keywords between Resume and Job Description (EN):")
+for keyword in common_keywords_en:
+    print(f"- {keyword}")
+
+# Анализируем ключевые слова на русском языке
+common_keywords_ru = compare_keywords(resume_text_ru, job_description_text_ru)
+print("\nCommon Keywords between Resume and Job Description (RU):")
+for keyword in common_keywords_ru:
+    print(f"- {keyword}")
