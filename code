@@ -1,0 +1,51 @@
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Загрузка необходимых ресурсов NLTK
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Функция для очистки текста (удаление стоп-слов и ненужных символов)
+def clean_text(text):
+    stop_words = set(stopwords.words('english'))
+    # Токенизация текста и удаление стоп-слов
+    tokens = word_tokenize(text.lower())
+    cleaned_tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
+    return cleaned_tokens
+
+# Функция для извлечения ключевых слов с использованием TF-IDF
+def extract_keywords(text):
+    tfidf_vectorizer = TfidfVectorizer(max_features=10)  # Ограничиваем количество ключевых слов
+    tfidf_matrix = tfidf_vectorizer.fit_transform([text])
+    feature_names = tfidf_vectorizer.get_feature_names_out()
+    return feature_names
+
+# Функция для анализа совпадений ключевых слов в резюме и вакансии
+def compare_keywords(resume_text, job_description_text):
+    resume_keywords = extract_keywords(resume_text)
+    job_keywords = extract_keywords(job_description_text)
+    
+    common_keywords = set(resume_keywords).intersection(set(job_keywords))
+    
+    return common_keywords
+
+# Пример текста резюме и вакансии
+resume_text = """
+I am a software engineer with experience in Python, Java, and Machine Learning.
+I have developed several web applications using Flask and Django.
+I am also experienced in using SQL databases and building scalable systems.
+"""
+
+job_description_text = """
+We are looking for a software engineer with experience in Python, Django, and SQL databases.
+The ideal candidate should be comfortable working with Flask and be knowledgeable about scalable systems.
+"""
+
+# Анализируем ключевые слова
+common_keywords = compare_keywords(resume_text, job_description_text)
+
+print("Common Keywords between Resume and Job Description:")
+for keyword in common_keywords:
+    print(f"- {keyword}")
