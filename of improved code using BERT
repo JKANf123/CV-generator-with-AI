@@ -1,0 +1,68 @@
+import torch
+from transformers import BertTokenizer, BertForTokenClassification
+from transformers import pipeline
+from langdetect import detect
+
+# Загрузка модели BERT и токенизатора для Named Entity Recognition (NER)
+tokenizer = BertTokenizer.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
+model = BertForTokenClassification.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
+nlp_ner = pipeline("ner", model=model, tokenizer=tokenizer)
+
+# Функция для извлечения сущностей с использованием BERT
+def extract_entities(text):
+    try:
+        entities = nlp_ner(text)
+        return entities
+    except Exception as e:
+        print(f"Error in extracting entities: {e}")
+        return []
+
+# Функция для извлечения ключевых навыков из резюме и вакансий с использованием BERT
+def extract_skills_with_bert(resume_text, job_description_text):
+    # Определяем язык текста
+    try:
+        resume_language = detect(resume_text)
+        job_language = detect(job_description_text)
+    except Exception as e:
+        print(f"Error detecting language: {e}")
+        return [], []
+
+    # Извлекаем сущности из резюме и вакансии
+    resume_entities = extract_entities(resume_text)
+    job_description_entities = extract_entities(job_description_text)
+
+    # Фильтруем сущности, связанные с навыками (например, "skill" или "technique")
+    resume_skills = [entity['word'] for entity in resume_entities if entity['entity'] == 'B-ORG' or entity['entity'] == 'B-MISC']
+    job_description_skills = [entity['word'] for entity in job_description_entities if entity['entity'] == 'B-ORG' or entity['entity'] == 'B-MISC']
+
+    return resume_skills, job_description_skills
+
+# Пример текста резюме и вакансии
+resume_text_en = """
+I am a software engineer with experience in Python, Java, and Machine Learning.
+I have developed several web applications using Flask and Django.
+I am also experienced in using SQL databases and building scalable systems.
+"""
+
+job_description_text_en = """
+We are looking for a software engineer with experience in Python, Django, and SQL databases.
+The ideal candidate should be comfortable working with Flask and be knowledgeable about scalable systems.
+"""
+
+# Извлекаем навыки из резюме и вакансии
+resume_skills, job_description_skills = extract_skills_with_bert(resume_text_en, job_description_text_en)
+
+# Печатаем результаты
+print("Skills from Resume:")
+for skill in resume_skills:
+    print(f"- {skill}")
+
+print("\nSkills from Job Description:")
+for skill in job_description_skills:
+    print(f"- {skill}")
+
+# Анализируем общие навыки
+common_skills = set(resume_skills).intersection(set(job_description_skills))
+print("\nCommon Skills between Resume and Job Description:")
+for skill in common_skills:
+    print(f"- {skill}")
